@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICD Code Parser</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>ICD Code Parser</h1>
+  <textarea id="input" placeholder="R52 (Pain, unspecified), M19.90 (Osteoarthritis, unspecified site)" aria-label="ICD code input"></textarea>
+  <button onclick="convert()">Convert to JSON</button>
+
+  <h2>Result</h2>
+  <pre id="output">{}</pre>
+  <div id="copy-wrapper">
+    <button onclick="copyToClipboard()">📋 Copy</button>
+    <span id="copied">Copied!</span>
+  </div>
+
+  <script>
+    function convert() {
+      const inputElement = document.getElementById('input');
+      const outputElement = document.getElementById('output');
+      const copiedElement = document.getElementById('copied');
+      
+      const input = inputElement.value.trim();
+      const regex = /[\s,]*([A-Z][0-9.]+)\s+\(([^)]+)\)/g;
+      const codes = [];
+
+      let match;
+      while ((match = regex.exec(input)) !== null) {
+        codes.push({ code: match[1], description: match[2].trim() });
+      }
+
+      outputElement.textContent = JSON.stringify({ codes }, null, 2);
+      copiedElement.style.display = 'none';
+    }
+
+    function copyToClipboard() {
+      const outputElement = document.getElementById('output');
+      const copiedElement = document.getElementById('copied');
+      
+      navigator.clipboard.writeText(outputElement.textContent).then(() => {
+        copiedElement.style.display = 'inline';
+        setTimeout(() => {
+          copiedElement.style.display = 'none';
+        }, 1000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+    }
+  </script>
+</body>
+</html>
