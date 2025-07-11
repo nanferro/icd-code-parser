@@ -30,7 +30,7 @@
 
       let match;
       while ((match = regex.exec(input)) !== null) {
-        codes.push({ code: match[1], description: match[2].trim() });
+        codes.push({ code: match[1], text: match[2].trim() });
       }
 
       outputElement.textContent = JSON.stringify({ codes }, null, 2);
