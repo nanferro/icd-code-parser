@@ -8,8 +8,11 @@
 </head>
 <body>
   <h1>ICD Code Parser</h1>
-  <textarea id="input" placeholder="R52 (Pain, unspecified), M19.90 (Osteoarthritis, unspecified site)" aria-label="ICD code input"></textarea>
-  <button onclick="convert()">Convert to JSON</button>
+  <textarea id="input" placeholder="G30.9 (Alzheimer disease, unspecified), S06.2X9S (Diffuse traumatic brain injury, sequela)" aria-label="ICD code input"></textarea>
+  <div class="button-group">
+    <button onclick="convert()">Convert to JSON</button>
+    <button onclick="extractCodes()">Extract Codes</button>
+  </div>
 
   <h2>Result</h2>
   <pre id="output">{}</pre>
@@ -34,6 +37,24 @@
       }
 
       outputElement.textContent = JSON.stringify({ codes }, null, 2);
+      copiedElement.style.display = 'none';
+    }
+
+    function extractCodes() {
+      const inputElement = document.getElementById('input');
+      const outputElement = document.getElementById('output');
+      const copiedElement = document.getElementById('copied');
+      
+      const input = inputElement.value.trim();
+      const regex = /[\s,]*([A-Z][0-9A-Z.]+)\s+\([^)]+\)/g;
+      const codes = [];
+
+      let match;
+      while ((match = regex.exec(input)) !== null) {
+        codes.push(match[1]);
+      }
+
+      outputElement.textContent = JSON.stringify(codes, null, 2);
       copiedElement.style.display = 'none';
     }
 
