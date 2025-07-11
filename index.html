@@ -28,7 +28,7 @@
       const copiedElement = document.getElementById('copied');
       
       const input = inputElement.value.trim();
-      const regex = /[\s,]*([A-Z][0-9.]+)\s+\((.*?)\)(?=[\s,]*$|[\s,]*[A-Z][0-9.]+)/g;
+      const regex = /[\s,;]*([A-Z][0-9A-Z.]+)\s+\((.*?)\)(?=[\s,;]*$|[\s,;]*[A-Z][0-9A-Z.]+)/g;
       const codes = [];
 
       let match;
