@@ -26,7 +26,7 @@
       const inputElement = document.getElementById('input');
       const outputElement = document.getElementById('output');
       const copiedElement = document.getElementById('copied');
-      
+      // Warning: nested parentheses are not handled correctly
       const input = inputElement.value.trim();
       const regex = /[\s,;]*([A-Z][0-9A-Z.]+)\s+\(([^)]+)\)/g;
       const codes = [];
