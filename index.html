@@ -8,56 +8,148 @@
 </head>
 <body>
   <h1>ICD Code Parser</h1>
-  <textarea id="input" placeholder="G30.9 (Alzheimer disease, unspecified), S06.2X9S (Diffuse traumatic brain injury, sequela)" aria-label="ICD code input"></textarea>
+  <textarea id="input" placeholder="G30.9 (Alzheimer disease, unspecified), S06.2X9S (Diffuse traumatic brain injury (with loss of consciousness), sequela)" aria-label="ICD code input"></textarea>
   <div class="button-group">
     <button onclick="convert()">Convert to JSON</button>
     <button onclick="extractCodes()">Extract Codes</button>
   </div>
-
   <h2>Result</h2>
   <pre id="output">{}</pre>
   <div id="copy-wrapper">
     <button onclick="copyToClipboard()">📋 Copy</button>
     <span id="copied">Copied!</span>
   </div>
-
   <script>
+    function parseICDCodes(input) {
+
+      // -----------------------------
+      // НОРМАЛИЗАЦИЯ (минимальные правки)
+      // -----------------------------
+
+      const cleaned = input
+        .replace(/\r\n?/g, '\n')          // FIX: нормальная замена переносов
+        .replace(/\\"/g, '"')             // FIX: корректная замена экранированных кавычек, а не всех кавычек подряд
+        .trim();
+
+      // FIX: используем длину cleaned, чтобы не было рассинхрона
+      let i = 0;
+      const len = cleaned.length;
+
+      const codes = [];
+
+      while (i < len) {
+
+        // -----------------------------
+        // Пропускаем разделители
+        // -----------------------------
+        while (i < len && /[\s,;\n]/.test(cleaned[i])) i++; // FIX: убран бессмысленный '\\'
+        if (i >= len) break;
+
+        // -----------------------------
+        // Парсим код: начинается с буквы, содержит хотя бы 1 цифру
+        // -----------------------------
+        let codeStart = i;
+        let hasDigit = false;
+
+        if (/[A-Z]/.test(cleaned[i])) {
+          i++; 
+          while (i < len && /[A-Z0-9.]/.test(cleaned[i])) {
+            if (/[0-9]/.test(cleaned[i])) hasDigit = true;
+            i++;
+          }
+        }
+
+        let code = cleaned.slice(codeStart, i).trim();
+        if (!code || code.length < 2 || !hasDigit) { i++; continue; }
+
+        // Пропустить пробелы
+        while (i < len && /\s/.test(cleaned[i])) i++;
+
+        // -----------------------------
+        // Парсим текст в скобках
+        // -----------------------------
+        let text = '';
+
+        if (i < len && cleaned[i] === '(') {
+          let depth = 1;
+          let textStart = ++i;
+          let lastSepPos = -1;
+
+          while (i < len && depth > 0) {
+            let ch = cleaned[i];
+
+            if (ch === '(') depth++;
+            else if (ch === ')') depth--;
+
+            // FIX: только "безопасные" разделители, запятую внутри описания НЕ трогаем
+            if (/[;\n]/.test(ch)) lastSepPos = i; 
+
+            i++;
+
+            // -----------------------------
+            // Эвристика: обнаружили новый код внутри скобок
+            // -----------------------------
+            if (depth > 0) {
+              // FIX: пропустить пробелы перед новой буквой (твой пример ломался из-за этого)
+              let lookahead = i;
+              while (lookahead < len && /\s/.test(cleaned[lookahead])) lookahead++;
+
+              if (lookahead < len && /[A-Z]/.test(cleaned[lookahead])) {
+                let tempI = lookahead + 1;
+                let tempHasDigit = false;
+
+                while (tempI < len && /[A-Z0-9.]/.test(cleaned[tempI])) {
+                  if (/[0-9]/.test(cleaned[tempI])) tempHasDigit = true;
+                  tempI++;
+                }
+
+                if (tempI - lookahead >= 3 && tempHasDigit) {
+                  // FIX: не режем по запятой внутри текста, только по ; или переносу
+                  if (lastSepPos >= textStart) {
+                    text = cleaned.slice(textStart, lastSepPos).trim();
+                    i = lastSepPos;
+                  }
+                  break;
+                }
+              }
+            }
+          }
+
+          if (!text) {
+            text = cleaned.slice(textStart, depth === 0 ? i - 1 : i).trim();
+          }
+        }
+
+        codes.push({ code, text });
+      }
+
+      return codes;
+    }
+
     function convert() {
       const inputElement = document.getElementById('input');
       const outputElement = document.getElementById('output');
       const copiedElement = document.getElementById('copied');
-      // Warning: nested parentheses are not handled correctly
+      
       const input = inputElement.value.trim();
-      const regex = /[\s,;]*([A-Z][0-9A-Z.]+)\s+\(([^)]+)\)/g;
-      const codes = [];
-
-      let match;
-      while ((match = regex.exec(input)) !== null) {
-        codes.push({ code: match[1], text: match[2].trim() });
-      }
-
+      const codes = parseICDCodes(input);
+      
       outputElement.textContent = JSON.stringify({ codes }, null, 2);
       copiedElement.style.display = 'none';
     }
-
+    
     function extractCodes() {
       const inputElement = document.getElementById('input');
       const outputElement = document.getElementById('output');
       const copiedElement = document.getElementById('copied');
       
       const input = inputElement.value.trim();
-      const regex = /[\s,]*([A-Z][0-9A-Z.]+)\s+\([^)]+\)/g;
-      const codes = [];
-
-      let match;
-      while ((match = regex.exec(input)) !== null) {
-        codes.push(match[1]);
-      }
-
+      const codes = parseICDCodes(input).map(c => c.code);
+      
       outputElement.textContent = JSON.stringify(codes, null, 2);
       copiedElement.style.display = 'none';
     }
-
+    
     function copyToClipboard() {
       const outputElement = document.getElementById('output');
       const copiedElement = document.getElementById('copied');
@@ -67,9 +159,7 @@
         setTimeout(() => {
           copiedElement.style.display = 'none';
         }, 1000);
-      }).catch(err => {
-        console.error('Failed to copy: ', err);
-      });
+      })
     }
   </script>
 </body>
