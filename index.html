@@ -42,7 +42,8 @@
           let codeStart = i;
           let hasDigit = false;
 
-          if (/[A-Z]/.test(cleaned[i])) {
+          if (/[A-Z0-9]/.test(cleaned[i])) {
+            if (/[0-9]/.test(cleaned[i])) hasDigit = true;
             i++;
             while (i < len && /[A-Z0-9.]/.test(cleaned[i])) {
               if (/[0-9]/.test(cleaned[i])) hasDigit = true;
